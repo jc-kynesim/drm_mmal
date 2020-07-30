@@ -133,6 +133,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //Patches sorted for vc4_plane.c for each of these, and then they work.
 //
 #define ENCODING_FOR_DRM  MMAL_ENCODING_YUVUV128
+//#define ENCODING_FOR_DRM  MMAL_ENCODING_I420
 
 #define DRM_MODULE "vc4"
 #define MAX_BUFFERS 3
@@ -1112,11 +1113,34 @@ int main(int argc, char **argv)
    MMAL_BUFFER_HEADER_T *current_buffer = NULL;
    MMAL_CONNECTION_T *connection = NULL;
    unsigned int in_count = 0, conn_out_count = 0, conn_in_count = 0, out_count = 0;
+   const char * es_file;
+   uint32_t fmt = ENCODING_FOR_DRM;
 
-   if (argc < 2)
+   if (argc < 2 || argc > 3)
    {
-      fprintf(stderr, "usage: mmal-demo <filename>\n");
+usage:
+      fprintf(stderr, "usage: mmal-demo [i420|sand|nv12|rgba] <filename>\n");
       return -1;
+   }
+
+   if (argc == 2) {
+      es_file = argv[2];
+   }
+   else {
+      const char * enc = argv[1];
+
+      if (strcasecmp(enc, "i420") == 0)
+         fmt = MMAL_ENCODING_I420;
+      else if (strcasecmp(enc, "sand") == 0)
+         fmt = MMAL_ENCODING_YUVUV128;
+      else if (strcasecmp(enc, "nv12") == 0)
+         fmt = MMAL_ENCODING_NV12;
+      else if (strcasecmp(enc, "rgba") == 0)
+         fmt = MMAL_ENCODING_RGBA;
+      else
+         goto usage;
+
+      es_file = argv[2];
    }
 
    bcm_host_init();
@@ -1141,7 +1165,7 @@ int main(int argc, char **argv)
 
    vcos_semaphore_create(&context.semaphore, "example", 1);
 
-   SOURCE_OPEN(argv[1]);
+   SOURCE_OPEN(es_file);
 
    /* Create the decoder component.
     * This specific component exposes 2 ports (1 input and 1 output). Like most components
@@ -1253,7 +1277,7 @@ int main(int argc, char **argv)
 
    isp->output[0]->userdata = (void *)&context;
    mmal_format_full_copy(isp->output[0]->format, isp->input[0]->format);
-   isp->output[0]->format->encoding = ENCODING_FOR_DRM;
+   isp->output[0]->format->encoding = fmt;
 
    status = mmal_port_format_commit(isp->output[0]);
    CHECK_STATUS(status, "failed to set ISP output format");
@@ -1270,7 +1294,7 @@ int main(int argc, char **argv)
 
    pool_out = pool_create_drm(isp->output[0], buffers, drmfd,
                               setup.egl_dpy, setup.ctx);
-   setup.out_fourcc = mmal_encoding_to_drm_fourcc(ENCODING_FOR_DRM);
+   setup.out_fourcc = mmal_encoding_to_drm_fourcc(fmt);
 
    /* Start decoding */
    fprintf(stderr, "start decoding\n");
@@ -1341,7 +1365,7 @@ int main(int argc, char **argv)
                status = drm_mmal_destroy_buffers(isp->output[0], buffers, drmfd, pool_out);
 
                status = mmal_format_full_copy(isp->output[0]->format, event->format);
-               isp->output[0]->format->encoding = ENCODING_FOR_DRM;
+               isp->output[0]->format->encoding = fmt;
                isp->output[0]->buffer_num = MAX_BUFFERS;
                isp->output[0]->buffer_size = isp->output[0]->buffer_size_min;
 
