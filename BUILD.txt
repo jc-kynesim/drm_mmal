@@ -1,0 +1,20 @@
+# Build instructions for a Pi4 (Fake KMS world)
+# Do this on the Pi
+
+# 1st install stuff (may be a partial list)
+sudo apt install meson libepoxy-dev libxcb-dri3-dev libxcb1-dev libx11-dev libx11-xcb-dev libdrm-dev
+
+# Setup - this may complain about missing packages
+# install what it complains about
+meson setup build
+
+# Build
+ninja -C build
+
+# Working test
+build/mmal-demo i420 test.h264
+# Working test - but generates unexpected output logging from mesa
+build/mmal-demo rgba test.h264
+# Non-working test
+build/mmal-demo sand test.h264
+
