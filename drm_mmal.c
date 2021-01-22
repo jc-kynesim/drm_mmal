@@ -312,6 +312,9 @@ uint32_t mmal_encoding_to_drm_fourcc(uint32_t mmal_encoding)
 
 static int get_sand_column_pitch(int height)
 {
+#if 1
+   return (height * 3 / 2 + 15) & ~15;
+#else
    int pitch;
 
    if (height <= (YUV_UV_MAX_TALL_MODE_HEIGHT-16))
@@ -359,6 +362,7 @@ static int get_sand_column_pitch(int height)
    }
    h <<= 4;
    return h;
+#endif
 }
 
 void mmal_format_to_drm_pitches_offsets(uint32_t *pitches, uint32_t *offsets,
@@ -405,7 +409,7 @@ void mmal_format_to_drm_pitches_offsets(uint32_t *pitches, uint32_t *offsets,
          modifiers[1] = modifiers[0];
          pitches[1] = pitches[0];
 
-         offsets[1] = 128 * (format->es->video.height+32);  //ISP seems to produce an extra 16 lines of padding. Don't know why.
+         offsets[1] = 128 * (format->es->video.height);  //ISP seems to produce an extra 16 lines of padding. Don't know why.
 
          bo_handles[1] = bo_handles[0];
          break;
@@ -1369,6 +1373,12 @@ usage:
                isp->output[0]->buffer_num = MAX_BUFFERS;
                isp->output[0]->buffer_size = isp->output[0]->buffer_size_min;
 
+               if (fmt == MMAL_ENCODING_YUVUV128) {
+                  isp->output[0]->format->flags = MMAL_ES_FORMAT_FLAG_COL_FMTS_WIDTH_IS_COL_STRIDE;
+                  isp->output[0]->format->es->video.width = get_sand_column_pitch(isp->output[0]->format->es->video.height);
+               }
+
+               mmal_log_dump_port(isp->output[0]);
                if (status == MMAL_SUCCESS)
                   status = mmal_port_format_commit(isp->output[0]);
                if (status != MMAL_SUCCESS)
