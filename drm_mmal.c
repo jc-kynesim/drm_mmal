@@ -404,7 +404,7 @@ void mmal_format_to_drm_pitches_offsets(uint32_t *pitches, uint32_t *offsets,
          break;
       case MMAL_ENCODING_YUVUV128:
          pitches[0] = format->es->video.width;    //Should be 128, but DRM rejects that.
-         modifiers[0] = DRM_FORMAT_MOD_BROADCOM_SAND128_COL_HEIGHT(get_sand_column_pitch(format->es->video.height));
+         modifiers[0] = DRM_FORMAT_MOD_BROADCOM_SAND128_COL_HEIGHT(format->es->video.width);
          printf("Modifier set as %llu, param %u\n", modifiers[0], fourcc_mod_broadcom_param(modifiers[0]));
          modifiers[1] = modifiers[0];
          pitches[1] = pitches[0];
