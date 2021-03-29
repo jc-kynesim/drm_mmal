@@ -1282,6 +1282,10 @@ usage:
    isp->output[0]->userdata = (void *)&context;
    mmal_format_full_copy(isp->output[0]->format, isp->input[0]->format);
    isp->output[0]->format->encoding = fmt;
+   if (fmt == MMAL_ENCODING_YUVUV128) {
+         isp->output[0]->format->flags |= MMAL_ES_FORMAT_FLAG_COL_FMTS_WIDTH_IS_COL_STRIDE;
+         isp->output[0]->format->es->video.width = get_sand_column_pitch(isp->output[0]->format->es->video.height);
+   }
 
    status = mmal_port_format_commit(isp->output[0]);
    CHECK_STATUS(status, "failed to set ISP output format");
@@ -1374,7 +1378,7 @@ usage:
                isp->output[0]->buffer_size = isp->output[0]->buffer_size_min;
 
                if (fmt == MMAL_ENCODING_YUVUV128) {
-                  isp->output[0]->format->flags = MMAL_ES_FORMAT_FLAG_COL_FMTS_WIDTH_IS_COL_STRIDE;
+                  isp->output[0]->format->flags |= MMAL_ES_FORMAT_FLAG_COL_FMTS_WIDTH_IS_COL_STRIDE;
                   isp->output[0]->format->es->video.width = get_sand_column_pitch(isp->output[0]->format->es->video.height);
                }
 
